@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DevFlow - Code Review</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #58a6ff; }
+        .editor { display: flex; gap: 20px; }
+        .code-input { flex: 1; }
+        textarea { width: 100%; height: 400px; background: #161b22; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 10px; font-family: monospace; }
+        .results { flex: 1; background: #161b22; border-radius: 6px; padding: 20px; }
+        .issue { padding: 10px; margin: 5px 0; border-radius: 6px; }
+        .issue.error { background: #f8514966; border-left: 3px solid #f85149; }
+        .issue.warning { background: #d2992266; border-left: 3px solid #d29922; }
+        .issue.security { background: #a371f766; border-left: 3px solid #a371f7; }
+        .score { font-size: 48px; font-weight: bold; text-align: center; margin: 20px 0; }
+        .score.good { color: #3fb950; }
+        .score.bad { color: #f85149; }
+        button { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+        button:hover { background: #2ea043; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 DevFlow - Code Review</h1>
+        <div class="editor">
+            <div class="code-input">
+                <textarea id="code" placeholder="Paste your code here..."># Example Python code
+def hello():
+    print("Hello World")
+    # TODO: add more features
+    eval("1+1")
+</textarea>
+                <button onclick="analyze()">🔍 Analyze Code</button>
+            </div>
+            <div class="results">
+                <div class="score" id="score">--</div>
+                <div id="issues"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function analyze() {
+            fetch('/api/analyze', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({code: document.getElementById('code').value})
+            }).then(r => r.json()).then(data => {
+                document.getElementById('score').textContent = data.score;
+                document.getElementById('score').className = 'score ' + (data.score >= 70 ? 'good' : 'bad');
+                document.getElementById('issues').innerHTML = data.issues.map(i => 
+                    '<div class="issue ' + i.type + '">' + i.msg + '</div>'
+                ).join('');
+            });
+        }
+    </script>
+</body>
+</html>
