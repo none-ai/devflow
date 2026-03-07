@@ -1,59 +1,583 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>DevFlow - Code Review</title>
+    <title>DevFlow - Code Review Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { color: #58a6ff; }
-        .editor { display: flex; gap: 20px; }
-        .code-input { flex: 1; }
-        textarea { width: 100%; height: 400px; background: #161b22; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 10px; font-family: monospace; }
-        .results { flex: 1; background: #161b22; border-radius: 6px; padding: 20px; }
-        .issue { padding: 10px; margin: 5px 0; border-radius: 6px; }
-        .issue.error { background: #f8514966; border-left: 3px solid #f85149; }
-        .issue.warning { background: #d2992266; border-left: 3px solid #d29922; }
-        .issue.security { background: #a371f766; border-left: 3px solid #a371f7; }
-        .score { font-size: 48px; font-weight: bold; text-align: center; margin: 20px 0; }
-        .score.good { color: #3fb950; }
-        .score.bad { color: #f85149; }
-        button { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
-        button:hover { background: #2ea043; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background: linear-gradient(135deg, #161b22 0%, #1f2428 100%);
+            border-bottom: 1px solid #30363d;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        h1 {
+            color: #58a6ff;
+            margin: 0;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon {
+            font-size: 32px;
+        }
+        .tagline {
+            color: #8b949e;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        select, input[type="file"] {
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .panel-header {
+            background: #21262d;
+            padding: 12px 16px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-title {
+            font-weight: 600;
+            color: #c9d1d9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .code-area {
+            position: relative;
+        }
+        textarea {
+            width: 100%;
+            height: 500px;
+            background: #0d1117;
+            color: #c9d1d9;
+            border: none;
+            padding: 15px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+        }
+        textarea:focus {
+            outline: none;
+        }
+        .btn {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #2ea043;
+        }
+        .btn.secondary {
+            background: #21262d;
+            border: 1px solid #30363d;
+        }
+        .btn.secondary:hover {
+            background: #30363d;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .results-area {
+            height: 500px;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .score-container {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 1px solid #30363d;
+        }
+        .score {
+            font-size: 64px;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .score.excellent { color: #3fb950; }
+        .score.good { color: #56d364; }
+        .score.fair { color: #d29922; }
+        .score.poor { color: #f85149; }
+        .score-label {
+            color: #8b949e;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 15px 0;
+            border-bottom: 1px solid #30363d;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #c9d1d9;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #8b949e;
+            text-transform: uppercase;
+        }
+        .issue {
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 3px solid;
+            background: rgba(255,255,255,0.02);
+        }
+        .issue.error {
+            border-color: #f85149;
+            background: rgba(248, 81, 73, 0.1);
+        }
+        .issue.warning {
+            border-color: #d29922;
+            background: rgba(210, 153, 34, 0.1);
+        }
+        .issue.security {
+            border-color: #a371f7;
+            background: rgba(163, 113, 247, 0.1);
+        }
+        .issue.style {
+            border-color: #58a6ff;
+            background: rgba(88, 166, 255, 0.1);
+        }
+        .issue.info {
+            border-color: #8b949e;
+            background: rgba(139, 148, 158, 0.1);
+        }
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .issue-type {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .issue.error .issue-type { background: #f85149; color: white; }
+        .issue.warning .issue-type { background: #d29922; color: white; }
+        .issue.security .issue-type { background: #a371f7; color: white; }
+        .issue.style .issue-type { background: #58a6ff; color: white; }
+        .issue.info .issue-type { background: #8b949e; color: white; }
+        .issue-line {
+            font-size: 12px;
+            color: #8b949e;
+        }
+        .issue-msg {
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+        .issue-match {
+            font-family: monospace;
+            font-size: 12px;
+            color: #8b949e;
+            background: rgba(0,0,0,0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-top: 6px;
+            display: inline-block;
+        }
+        .no-issues {
+            text-align: center;
+            padding: 40px;
+            color: #3fb950;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8b949e;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 15px;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #8b949e;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+        }
+        .tab-btn.active {
+            color: #58a6ff;
+            border-bottom-color: #58a6ff;
+        }
+        .file-upload {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .file-upload input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            height: 100%;
+            width: 100%;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-item:hover {
+            background: rgba(255,255,255,0.02);
+        }
+        .history-score {
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+        .history-score.good { background: rgba(63, 185, 80, 0.2); color: #3fb950; }
+        .history-score.bad { background: rgba(248, 81, 73, 0.2); color: #f85149; }
+
+        @media (max-width: 900px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+            }
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔍 DevFlow - Code Review</h1>
-        <div class="editor">
-            <div class="code-input">
-                <textarea id="code" placeholder="Paste your code here..."># Example Python code
-def hello():
-    print("Hello World")
-    # TODO: add more features
-    eval("1+1")
-</textarea>
-                <button onclick="analyze()">🔍 Analyze Code</button>
+    <header>
+        <div class="header-content">
+            <div>
+                <h1><span class="logo-icon">🔍</span> DevFlow</h1>
+                <div class="tagline">智能代码审查平台 / Intelligent Code Review Platform</div>
             </div>
-            <div class="results">
-                <div class="score" id="score">--</div>
-                <div id="issues"></div>
+            <div class="controls">
+                <div class="file-upload">
+                    <button class="btn secondary">📁 上传文件 / Upload File</button>
+                    <input type="file" id="fileInput" accept=".py,.js,.ts,.jsx,.tsx,.java,.go,.rs,.cpp,.cc,.h,.hpp">
+                </div>
+                <select id="languageSelect">
+                    <option value="python">Python</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="java">Java</option>
+                    <option value="go">Go</option>
+                    <option value="rust">Rust</option>
+                    <option value="cpp">C++</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="editor-container">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📝 代码编辑器 / Code Editor</span>
+                    <span id="lineCount" style="color: #8b949e; font-size: 12px;">0 行 / lines</span>
+                </div>
+                <div class="code-area">
+                    <textarea id="code" placeholder="Paste your code here..."># 示例代码 / Example Code
+
+def calculate_sum(numbers):
+    total = 0
+    for num in numbers:
+        total = total + num
+        print(num)  # TODO: 使用日志框架
+    return total
+
+# 硬编码密码 / Hardcoded password
+API_KEY = "sk-1234567890abcdef"
+
+result = eval("2 + 2")
+print(result)
+</textarea>
+                </div>
+                <div style="padding: 15px; border-top: 1px solid #30363d;">
+                    <button class="btn" onclick="analyze()" id="analyzeBtn">🔍 分析代码 / Analyze Code</button>
+                    <button class="btn secondary" onclick="clearCode()">🗑️ 清空 / Clear</button>
+                    <button class="btn secondary" onclick="exportResults()">📥 导出 / Export</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📊 审查结果 / Review Results</span>
+                </div>
+                <div class="results-area">
+                    <div class="score-container">
+                        <div class="score" id="score">--</div>
+                        <div class="score-label" id="scoreLabel">提交代码以获取评分 / Submit code to get score</div>
+                    </div>
+                    <div class="stats" id="stats" style="display: none;">
+                        <div class="stat">
+                            <div class="stat-value" id="statLines">0</div>
+                            <div class="stat-label">行 Lines</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="statErrors">0</div>
+                            <div class="stat-label">错误 Errors</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="statWarnings">0</div>
+                            <div class="stat-label">警告 Warnings</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="statSecurity">0</div>
+                            <div class="stat-label">安全 Security</div>
+                        </div>
+                    </div>
+                    <div id="issues"></div>
+                </div>
             </div>
         </div>
     </div>
+
     <script>
-        function analyze() {
-            fetch('/api/analyze', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({code: document.getElementById('code').value})
-            }).then(r => r.json()).then(data => {
-                document.getElementById('score').textContent = data.score;
-                document.getElementById('score').className = 'score ' + (data.score >= 70 ? 'good' : 'bad');
-                document.getElementById('issues').innerHTML = data.issues.map(i => 
-                    '<div class="issue ' + i.type + '">' + i.msg + '</div>'
-                ).join('');
-            });
+        const codeArea = document.getElementById('code');
+        const languageSelect = document.getElementById('languageSelect');
+        const fileInput = document.getElementById('fileInput');
+
+        // Update line count on input
+        codeArea.addEventListener('input', () => {
+            const lines = codeArea.value.split('\n').length;
+            document.getElementById('lineCount').textContent = `${lines} 行 / lines`;
+        });
+
+        // Handle file upload
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                    return;
+                }
+
+                const data = await response.json();
+                codeArea.value = data.analysis ? data.analysis.code : '';
+                languageSelect.value = data.language;
+                displayResults(data);
+            } catch (err) {
+                alert('Upload failed: ' + err.message);
+            }
+        });
+
+        async function analyze() {
+            const code = codeArea.value.trim();
+            if (!code) {
+                alert('请输入代码 / Please enter code');
+                return;
+            }
+
+            const btn = document.getElementById('analyzeBtn');
+            btn.disabled = true;
+            btn.textContent = '分析中... / Analyzing...';
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        code: code,
+                        language: languageSelect.value
+                    })
+                });
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (err) {
+                alert('Analysis failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 分析代码 / Analyze Code';
+            }
         }
+
+        function displayResults(data) {
+            const scoreEl = document.getElementById('score');
+            const scoreLabel = document.getElementById('scoreLabel');
+            const issuesEl = document.getElementById('issues');
+            const statsEl = document.getElementById('stats');
+
+            // Score
+            scoreEl.textContent = data.score;
+            scoreEl.className = 'score';
+            if (data.score >= 90) scoreEl.classList.add('excellent');
+            else if (data.score >= 70) scoreEl.classList.add('good');
+            else if (data.score >= 50) scoreEl.classList.add('fair');
+            else scoreEl.classList.add('poor');
+
+            scoreLabel.textContent = `${data.language_name} • ${data.lines} 行 / lines`;
+
+            // Stats
+            statsEl.style.display = 'flex';
+            const errors = data.issues.filter(i => i.type === 'error').length;
+            const warnings = data.issues.filter(i => i.type === 'warning').length;
+            const security = data.issues.filter(i => i.type === 'security').length;
+
+            document.getElementById('statLines').textContent = data.lines;
+            document.getElementById('statErrors').textContent = errors;
+            document.getElementById('statWarnings').textContent = warnings;
+            document.getElementById('statSecurity').textContent = security;
+
+            // Issues
+            if (data.issues.length === 0) {
+                issuesEl.innerHTML = '<div class="no-issues">🎉 太棒了！没有发现问题 / Great! No issues found!</div>';
+            } else {
+                issuesEl.innerHTML = data.issues.map(issue => `
+                    <div class="issue ${issue.type}">
+                        <div class="issue-header">
+                            <span class="issue-type">${issue.type}</span>
+                            ${issue.line ? `<span class="issue-line">Line ${issue.line}</span>` : ''}
+                        </div>
+                        <div class="issue-msg">${issue.msg}</div>
+                        ${issue.match ? `<div class="issue-match">${escapeHtml(issue.match)}</div>` : ''}
+                    </div>
+                `).join('');
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function clearCode() {
+            codeArea.value = '';
+            document.getElementById('score').textContent = '--';
+            document.getElementById('scoreLabel').textContent = '提交代码以获取评分 / Submit code to get score';
+            document.getElementById('stats').style.display = 'none';
+            document.getElementById('issues').innerHTML = '';
+        }
+
+        async function exportResults() {
+            const code = codeArea.value.trim();
+            if (!code) {
+                alert('没有可导出的结果 / No results to export');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        code: code,
+                        language: languageSelect.value
+                    })
+                });
+
+                const data = await response.json();
+
+                const exportResponse = await fetch('/api/export', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                const blob = await exportResponse.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'devflow_analysis.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                alert('Export failed: ' + err.message);
+            }
+        }
+
+        // Keyboard shortcut: Ctrl+Enter to analyze
+        codeArea.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                analyze();
+            }
+        });
     </script>
 </body>
 </html>
